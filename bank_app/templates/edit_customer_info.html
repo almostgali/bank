@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}编辑客户信息{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">编辑客户信息</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'edit_customer_info' customer_id=customer.userID %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="name" class="form-label">姓名</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ customer.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_card" class="form-label">身份证号</label>
+                            <input type="text" class="form-control" id="id_card" name="id_card" value="{{ customer.IDCard }}" required>
+                            <div class="form-text">身份证号必须为18位</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">联系电话</label>
+                            <input type="text" class="form-control" id="phone" name="phone" value="{{ customer.phone }}" required>
+                            <div class="form-text">电话号码必须为11位数字</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">地址</label>
+                            <textarea class="form-control" id="address" name="address" rows="3">{{ customer.address }}</textarea>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'customer_detail' customer_id=customer.userID %}" class="btn btn-secondary">返回</a>
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 表单验证
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            const idCard = document.getElementById('id_card').value;
+            const phone = document.getElementById('phone').value;
+            
+            let isValid = true;
+            let errorMessage = '';
+            
+            // 验证身份证号
+            if (idCard.length !== 18) {
+                isValid = false;
+                errorMessage = '身份证号必须为18位';
+            }
+            
+            // 验证电话号码
+            if (!/^\d{11}$/.test(phone)) {
+                isValid = false;
+                errorMessage = errorMessage ? errorMessage + '\n电话号码必须为11位数字' : '电话号码必须为11位数字';
+            }
+            
+            if (!isValid) {
+                event.preventDefault();
+                alert(errorMessage);
+            }
+        });
+    });
+</script>
+{% endblock %}

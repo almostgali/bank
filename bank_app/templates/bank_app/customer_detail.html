@@ -1,0 +1,619 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}{{ customer.customerName }} - 客户详情{% endblock %}
+
+{% block extra_js %}
+<style>
+    .card-info {
+        transition: all 0.3s ease;
+    }
+    .card-info:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    /* 移除了存款类型相关样式 */
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // 存款类型相关代码已移除
+    
+    // 银行卡注销按钮点击事件
+    $(document).on('click', '.cancel-card-btn', function() {
+        const cardId = $(this).data('card-id');
+        $('#cancelCardID').val(cardId);
+    });
+    
+    // 银行卡注销表单提交
+    $('#cancelCardBtn').click(function() {
+        const cardId = $('#cancelCardID').val();
+        const password = $('#cancelCardPassword').val();
+        
+        // 表单验证
+        if (!password) {
+            alert('请输入银行卡密码');
+            return;
+        }
+        
+        if (password.length !== 6) {
+            alert('密码必须为6位');
+            return;
+        }
+        
+        // 发送AJAX请求
+        $.ajax({
+            url: `/cards/${cardId}/cancel/`,
+            type: 'POST',
+            data: {
+                password: password,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            beforeSend: function() {
+                $('#cancelCardBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 处理中...');
+            },
+            success: function(response) {
+                // 关闭模态框
+                $('#cancelCardModal').modal('hide');
+                
+                // 重置表单
+                $('#cancelCardForm')[0].reset();
+                
+                // 显示成功消息
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        ${response.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                $('.container.mt-3').append(alertHtml);
+                
+                // 从表格中移除该银行卡行
+                const cardRow = $(`button[data-card-id="${cardId}"]`).closest('tr');
+                cardRow.fadeOut(500, function() {
+                    $(this).remove();
+                    
+                    // 更新卡片数量
+                    const cardCount = $('tbody tr').length;
+                    $('.badge.bg-secondary').text(`共 ${cardCount} 张`);
+                    
+                    // 如果没有卡片了，显示空状态
+                    if (cardCount === 0) {
+                        $('tbody').html(`
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="mb-3">
+                                        <i class="bi bi-credit-card-2-front text-muted" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 class="text-muted">该客户暂无银行卡信息</h5>
+                                    <p class="text-muted">点击下方按钮为客户添加银行卡</p>
+                                    <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addCardModal">
+                                        <i class="bi bi-plus-circle me-2"></i>添加银行卡
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                    }
+                });
+            },
+            error: function(xhr) {
+                let errorMsg = '操作失败';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                alert(errorMsg);
+            },
+            complete: function() {
+                $('#cancelCardBtn').prop('disabled', false).html('<i class="bi bi-trash me-2"></i>确认注销');
+            }
+        });
+    });
+    
+    // 添加银行卡表单提交
+    $('#createCardBtn').click(function() {
+        // 获取表单数据
+        const customerID = $('#customerID').val();
+        const initialBalance = $('#initialBalance').val();
+        const passwd = $('#passwd').val();
+        
+        // 表单验证
+        if (initialBalance === undefined || initialBalance === null || !passwd) {
+            alert('请填写所有必填字段');
+            return;
+        }
+        
+        if (passwd.length !== 6) {
+            alert('密码必须为6位');
+            return;
+        }
+        
+        // 发送AJAX请求
+        $.ajax({
+            url: `/customers/${customerID}/add_card/`,
+            type: 'POST',
+            data: {
+                initialBalance: initialBalance,
+                passwd: passwd,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            beforeSend: function() {
+                $('#createCardBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 处理中...');
+            },
+            success: function(response) {
+                // 关闭模态框
+                $('#addCardModal').modal('hide');
+                
+                // 重置表单
+                $('#addCardForm')[0].reset();
+                
+                // 显示成功消息
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        ${response.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                $('.container.mt-3').append(alertHtml);
+                
+                // 添加新卡到表格
+                const newRow = `
+                    <tr>
+                        <td>${response.card.cardID}</td>
+                        <td>${response.card.openDate}</td>
+                        <td class="text-success fw-bold">${response.card.balance}</td>
+                        <td><span class="badge bg-success">正常</span></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="/inquiry/balance/?card_id=${response.card.cardID}" class="btn btn-outline-info">查询余额</a>
+                                <a href="/inquiry/history/?card_id=${response.card.cardID}" class="btn btn-outline-secondary">交易记录</a>
+                                <button type="button" class="btn btn-outline-danger toggle-loss-btn" 
+                                        data-card-id="${response.card.cardID}" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#toggleLossModal">
+                                    <i class="bi bi-lock me-1"></i>挂失
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                
+                // 如果表格为空，则替换空行
+                if ($('tbody tr td.text-center').length) {
+                    $('tbody').html(newRow);
+                } else {
+                    $('tbody').append(newRow);
+                }
+                
+                // 更新卡片数量
+                const cardCount = $('tbody tr').length;
+                $('.badge.bg-secondary').text(`共 ${cardCount} 张`);
+                
+                // 页面滚动到新添加的行
+                $('html, body').animate({
+                    scrollTop: $('tbody tr:last-child').offset().top - 100
+                }, 500);
+            },
+            error: function(xhr) {
+                let errorMsg = '添加银行卡失败';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                alert(errorMsg);
+            },
+            complete: function() {
+                $('#createCardBtn').prop('disabled', false).html('<i class="bi bi-credit-card-2-front-fill me-2"></i>创建银行卡');
+            }
+        });
+    });
+    
+    // 挂失/解除挂失按钮点击事件
+    $(document).on('click', '.toggle-loss-btn', function() {
+        const cardId = $(this).data('card-id');
+        const isReportLoss = $(this).hasClass('btn-outline-success');
+        
+        // 设置模态框内容
+        $('#toggleLossCardID').val(cardId);
+        
+        if (isReportLoss) {
+            // 当前是已挂失状态，点击后将解除挂失
+            $('#toggleLossModalHeader').removeClass('bg-danger').addClass('bg-success');
+            $('#toggleLossModalTitle').text('解除银行卡挂失');
+            $('#toggleLossAlertTitle').text('确认解除挂失操作');
+            $('#toggleLossAlertText').text('解除挂失后，该银行卡将恢复正常使用状态，可以进行各类交易操作。请确认是否继续？');
+            $('#toggleLossBtn').removeClass('btn-danger').addClass('btn-success');
+            $('#toggleLossBtnIcon').removeClass('bi-lock').addClass('bi-unlock');
+            $('#toggleLossBtnText').text('确认解除挂失');
+        } else {
+            // 当前是正常状态，点击后将挂失
+            $('#toggleLossModalHeader').removeClass('bg-success').addClass('bg-danger');
+            $('#toggleLossModalTitle').text('银行卡挂失');
+            $('#toggleLossAlertTitle').text('确认挂失操作');
+            $('#toggleLossAlertText').text('挂失后，该银行卡将无法进行任何交易操作，直到解除挂失。请确认是否继续？');
+            $('#toggleLossBtn').removeClass('btn-success').addClass('btn-danger');
+            $('#toggleLossBtnIcon').removeClass('bi-unlock').addClass('bi-lock');
+            $('#toggleLossBtnText').text('确认挂失');
+        }
+    });
+    
+    // 挂失/解除挂失表单提交
+    $('#toggleLossBtn').click(function() {
+        const cardId = $('#toggleLossCardID').val();
+        const password = $('#toggleLossPassword').val();
+        
+        // 表单验证
+        if (!password) {
+            alert('请输入银行卡密码');
+            return;
+        }
+        
+        if (password.length !== 6) {
+            alert('密码必须为6位');
+            return;
+        }
+        
+        // 发送AJAX请求
+        $.ajax({
+            url: `/cards/${cardId}/toggle_loss_status/`,
+            type: 'POST',
+            data: {
+                password: password,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            beforeSend: function() {
+                $('#toggleLossBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 处理中...');
+            },
+            success: function(response) {
+                // 关闭模态框
+                $('#toggleLossModal').modal('hide');
+                
+                // 重置表单
+                $('#toggleLossForm')[0].reset();
+                
+                // 显示成功消息
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        ${response.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                $('.container.mt-3').append(alertHtml);
+                
+                // 更新银行卡状态显示
+                const cardRow = $(`button[data-card-id="${cardId}"]`).closest('tr');
+                const statusCell = cardRow.find('td:nth-child(4)');
+                
+                // 更新状态标签
+                statusCell.html(`
+                    <span class="badge ${response.badge_class} rounded-pill">
+                        <i class="bi ${response.icon_class} me-1"></i>${response.status_text}
+                    </span>
+                `);
+                
+                // 更新挂失/解除挂失按钮
+                const toggleBtn = cardRow.find('.toggle-loss-btn');
+                toggleBtn.removeClass('btn-outline-success btn-outline-danger')
+                       .addClass(response.button_class)
+                       .html(`<i class="bi ${response.is_report_loss === '是' ? 'bi-unlock' : 'bi-lock'} me-1"></i>${response.button_text}`);
+            },
+            error: function(xhr) {
+                let errorMsg = '操作失败';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                alert(errorMsg);
+            },
+            complete: function() {
+                $('#toggleLossBtn').prop('disabled', false);
+                // 恢复按钮文本和图标
+                const isReportLoss = $('#toggleLossModalTitle').text().includes('解除');
+                const iconClass = isReportLoss ? 'bi-unlock' : 'bi-lock';
+                const btnText = isReportLoss ? '确认解除挂失' : '确认挂失';
+                $('#toggleLossBtn').html(`<i class="bi ${iconClass} me-2"></i>${btnText}`);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="bi bi-person-vcard me-2 text-primary"></i>客户详情
+    </h2>
+    <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>返回列表
+    </a>
+</div>
+
+<div class="row">
+    <!-- 客户基本信息卡片 -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100 border-0 rounded-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-person-lines-fill me-2"></i>基本信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="avatar-circle mx-auto mb-2" style="width: 80px; height: 80px; background-color: #e9f5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 2rem; color: #0d6efd;">{{ customer.customerName|slice:"0:1" }}</span>
+                    </div>
+                    <h4 class="mb-0">{{ customer.customerName }}</h4>
+                    <p class="text-muted small">客户编号: {{ customer.customerID }}</p>
+                </div>
+                <hr>
+                <table class="table table-borderless">
+                    <tr>
+                        <th scope="row" style="width: 40%;">
+                            <i class="bi bi-credit-card me-2 text-primary"></i>身份证号:
+                        </th>
+                        <td>{{ customer.idCard }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <i class="bi bi-telephone me-2 text-primary"></i>联系电话:
+                        </th>
+                        <td>{{ customer.telephone }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <i class="bi bi-geo-alt me-2 text-primary"></i>地址:
+                        </th>
+                        <td>{{ customer.address|default:'未填写' }}</td>
+                    </tr>
+                </table>
+                <div class="d-grid gap-2 mt-4">
+                    <a href="{% url 'edit_customer_info' customer_id=customer.customerID %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil-square me-2"></i>编辑信息
+                    </a>
+                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#addCardModal">
+                        <i class="bi bi-credit-card-2-front me-2"></i>添加银行卡
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 银行卡列表 -->
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-credit-card-2-front-fill me-2"></i>关联银行卡
+                </h5>
+                <span class="badge bg-light text-dark rounded-pill px-3 py-2">
+                    <i class="bi bi-layers me-1"></i>共 {{ cards|length }} 张
+                </span>
+            </div>
+            <div class="card-body">
+                {% if cards %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="bi bi-credit-card me-1 text-primary"></i>银行卡号</th>
+                                <th><i class="bi bi-calendar-date me-1 text-primary"></i>开户日期</th>
+                                <th><i class="bi bi-cash-stack me-1 text-primary"></i>余额(元)</th>
+                                <th><i class="bi bi-shield-check me-1 text-primary"></i>状态</th>
+                                <th><i class="bi bi-gear me-1 text-primary"></i>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for card in cards %}
+                            <tr>
+                                <td>
+                                    <span class="d-inline-block">
+                                        {{ card.cardID }}
+                                    </span>
+                                </td>
+                                <td>{{ card.openDate|date:'Y-m-d' }}</td>
+                                <td class="text-success fw-bold">¥ {{ card.balance }}</td>
+                                <td>
+                                    {% if card.IsReportLoss == '是' %}
+                                        <span class="badge bg-danger rounded-pill">
+                                            <i class="bi bi-x-circle me-1"></i>已挂失
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success rounded-pill">
+                                            <i class="bi bi-check-circle me-1"></i>正常
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'balance_inquiry' %}?card_id={{ card.cardID }}" class="btn btn-outline-info">
+                                            <i class="bi bi-search me-1"></i>查询
+                                        </a>
+                                        <a href="{% url 'transaction_history' %}?card_id={{ card.cardID }}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-clock-history me-1"></i>记录
+                                        </a>
+                                        <button type="button" class="btn {% if card.IsReportLoss == '是' %}btn-outline-success{% else %}btn-outline-danger{% endif %} toggle-loss-btn" 
+                                                data-card-id="{{ card.cardID }}" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#toggleLossModal">
+                                            <i class="bi {% if card.IsReportLoss == '是' %}bi-unlock{% else %}bi-lock{% endif %} me-1"></i>
+                                            {% if card.IsReportLoss == '是' %}解除挂失{% else %}挂失{% endif %}
+                                        </button>
+                                        {% if request.user.role == 'admin' %}
+                                        <button type="button" class="btn btn-outline-dark cancel-card-btn" 
+                                                data-card-id="{{ card.cardID }}" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#cancelCardModal">
+                                            <i class="bi bi-trash me-1"></i>注销
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="bi bi-credit-card-2-front text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-muted">该客户暂无银行卡信息</h5>
+                    <p class="text-muted">点击下方按钮为客户添加银行卡</p>
+                    <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addCardModal">
+                        <i class="bi bi-plus-circle me-2"></i>添加银行卡
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加银行卡模态框 -->
+<div class="modal fade" id="addCardModal" tabindex="-1" aria-labelledby="addCardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addCardModalLabel">
+                    <i class="bi bi-credit-card-2-front-fill me-2"></i>为客户添加银行卡
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="avatar-circle mx-auto mb-2" style="width: 60px; height: 60px; background-color: #e9f5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 1.5rem; color: #0d6efd;">{{ customer.customerName|slice:"0:1" }}</span>
+                    </div>
+                    <h5 class="mb-0">{{ customer.customerName }}</h5>
+                    <p class="text-muted small">客户编号: {{ customer.customerID }}</p>
+                </div>
+                <form id="addCardForm">
+                    <input type="hidden" id="customerID" value="{{ customer.customerID }}">
+                    <!-- 银行卡号由系统自动生成 -->
+                    <!-- 存款类型已移除，使用默认值 -->
+                    <div class="mb-3">
+                        <label for="initialBalance" class="form-label">
+                            <i class="bi bi-cash-stack me-1 text-primary"></i>初始余额
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">¥</span>
+                            <input type="number" class="form-control" id="initialBalance" min="0" step="0.01" value="0" required>
+                        </div>
+                        <div class="form-text">请输入开户时的初始存款金额</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="passwd" class="form-label">
+                            <i class="bi bi-shield-lock me-1 text-primary"></i>银行卡密码
+                        </label>
+                        <input type="password" class="form-control" id="passwd" minlength="6" maxlength="6" required placeholder="请输入6位数字密码">
+                        <div class="form-text">密码必须为6位数字，请妥善保管</div>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="button" class="btn btn-primary" id="createCardBtn">
+                            <i class="bi bi-credit-card-2-front-fill me-2"></i>创建银行卡
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 挂失/解除挂失模态框 -->
+<div class="modal fade" id="toggleLossModal" tabindex="-1" aria-labelledby="toggleLossModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header" id="toggleLossModalHeader">
+                <h5 class="modal-title" id="toggleLossModalLabel">
+                    <i class="bi bi-shield-lock me-2"></i><span id="toggleLossModalTitle">银行卡挂失</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-warning mb-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="alert-heading" id="toggleLossAlertTitle">确认挂失操作</h5>
+                            <p id="toggleLossAlertText">挂失后，该银行卡将无法进行任何交易操作，直到解除挂失。请确认是否继续？</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="toggleLossForm">
+                    <input type="hidden" id="toggleLossCardID" name="card_id">
+                    <div class="mb-4">
+                        <label for="toggleLossPassword" class="form-label">
+                            <i class="bi bi-shield-lock me-1 text-primary"></i>银行卡密码
+                        </label>
+                        <input type="password" class="form-control" id="toggleLossPassword" name="password" minlength="6" maxlength="6" required placeholder="请输入6位数字密码">
+                        <div class="form-text">请输入银行卡密码以确认操作</div>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="button" class="btn" id="toggleLossBtn">
+                            <i class="bi me-2" id="toggleLossBtnIcon"></i><span id="toggleLossBtnText">确认挂失</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 银行卡注销模态框 -->
+<div class="modal fade" id="cancelCardModal" tabindex="-1" aria-labelledby="cancelCardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="cancelCardModalLabel">
+                    <i class="bi bi-trash me-2"></i>注销银行卡
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-danger mb-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="alert-heading">警告：此操作不可逆</h5>
+                            <p>注销银行卡后，该卡将被永久删除，所有相关交易记录将保留。请确认以下条件：</p>
+                            <ul>
+                                <li>银行卡余额必须为零</li>
+                                <li>必须输入正确的银行卡密码</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="cancelCardForm">
+                    <input type="hidden" id="cancelCardID" name="card_id">
+                    <div class="mb-4">
+                        <label for="cancelCardPassword" class="form-label">
+                            <i class="bi bi-shield-lock me-1 text-primary"></i>银行卡密码
+                        </label>
+                        <input type="password" class="form-control" id="cancelCardPassword" name="password" minlength="6" maxlength="6" required placeholder="请输入6位数字密码">
+                        <div class="form-text">请输入银行卡密码以确认操作</div>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="button" class="btn btn-danger" id="cancelCardBtn">
+                            <i class="bi bi-trash me-2"></i>确认注销
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

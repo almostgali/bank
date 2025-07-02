@@ -1,0 +1,233 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}客户管理 - 银行业务管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-people-fill me-2"></i>客户信息管理</h2>
+    <div>
+        <a href="{% url 'db_views_dashboard' %}" class="btn btn-info shadow-sm me-2">
+            <i class="bi bi-database me-1"></i> 数据库视图
+        </a>
+        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+            <i class="bi bi-person-plus me-1"></i> 添加客户
+        </button>
+    </div>
+</div>
+
+<!-- 搜索栏 -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form class="row g-3" id="searchForm">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchName" placeholder="按姓名搜索">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-credit-card"></i></span>
+                    <input type="text" class="form-control" id="searchID" placeholder="按身份证号搜索">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-outline-primary" id="searchBtn">
+                    <i class="bi bi-filter me-1"></i> 筛选
+                </button>
+                <button type="button" class="btn btn-outline-secondary ms-2" id="resetBtn">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> 重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 添加客户模态框 -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCustomerModalLabel">添加新客户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'customer_list' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="customerID" class="form-label">客户编号</label>
+                        <input type="text" class="form-control" id="customerID" name="customerID" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">姓名</label>
+                        <input type="text" class="form-control" id="customerName" name="customerName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="idCard" class="form-label">身份证号</label>
+                        <input type="text" class="form-control" id="idCard" name="idCard" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telephone" class="form-label">联系电话</label>
+                        <input type="text" class="form-control" id="telephone" name="telephone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">地址</label>
+                        <input type="text" class="form-control" id="address" name="address">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i>客户信息列表</h5>
+            <span class="badge bg-primary rounded-pill">共 {{ customers|length }} 位客户</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">客户编号</th>
+                        <th>姓名</th>
+                        <th>身份证号</th>
+                        <th>联系电话</th>
+                        <th>地址</th>
+                        <th class="text-end pe-3">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td class="ps-3">{{ customer.customerID }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle bg-primary text-white me-2">
+                                    {{ customer.customerName|first }}
+                                </div>
+                                {{ customer.customerName }}
+                            </div>
+                        </td>
+                        <td>{{ customer.idCard }}</td>
+                        <td>
+                            <i class="bi bi-telephone me-1 text-muted"></i>
+                            {{ customer.telephone }}
+                        </td>
+                        <td>
+                            <i class="bi bi-geo-alt me-1 text-muted"></i>
+                            {{ customer.address|default:'未设置' }}
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'customer_detail' customer.customerID %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i>详情
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editCustomerModal{{ customer.customerID }}">
+                                    <i class="bi bi-pencil me-1"></i>编辑
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-3">暂无客户信息</p>
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                                    <i class="bi bi-person-plus me-1"></i>添加第一位客户
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 0;
+    }
+</style>
+
+<!-- 添加客户模态框 -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addCustomerModalLabel">
+                    <i class="bi bi-person-plus me-2"></i>添加新客户
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="addCustomerForm" method="POST" action="{% url 'customer_list' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="customerID" class="form-label">
+                            <i class="bi bi-person-badge me-1"></i>客户编号
+                        </label>
+                        <input type="text" class="form-control" id="customerID" name="customerID" required placeholder="请输入客户编号">
+                        <div class="form-text">客户编号格式为12位数字</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">
+                            <i class="bi bi-person me-1"></i>姓名
+                        </label>
+                        <input type="text" class="form-control" id="customerName" name="customerName" required placeholder="请输入客户姓名">
+                    </div>
+                    <div class="mb-3">
+                        <label for="idCard" class="form-label">
+                            <i class="bi bi-credit-card me-1"></i>身份证号
+                        </label>
+                        <input type="text" class="form-control" id="idCard" name="idCard" required placeholder="请输入18位身份证号">
+                    </div>
+                    <div class="mb-3">
+                        <label for="telephone" class="form-label">
+                            <i class="bi bi-telephone me-1"></i>联系电话
+                        </label>
+                        <input type="text" class="form-control" id="telephone" name="telephone" required placeholder="请输入11位手机号码">
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">
+                            <i class="bi bi-geo-alt me-1"></i>地址
+                        </label>
+                        <textarea class="form-control" id="address" name="address" rows="2" required placeholder="请输入详细地址"></textarea>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary" id="addCustomerBtn">
+                            <i class="bi bi-person-plus-fill me-2"></i>添加客户
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

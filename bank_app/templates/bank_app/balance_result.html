@@ -1,0 +1,87 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}余额查询结果 - 银行业务管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-7 col-lg-5">
+        <div class="card shadow border-0 rounded-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-wallet2-fill me-2"></i>余额查询结果
+                </h5>
+            </div>
+            <div class="card-body p-5">
+                <!-- 银行卡信息 -->
+                <div class="text-center mb-4">
+                    <div class="d-inline-block p-3 bg-info bg-opacity-10 rounded-circle mb-3">
+                        <i class="bi bi-credit-card-2-front fs-1 text-info"></i>
+                    </div>
+                    <h6 class="text-muted">银行卡信息</h6>
+                    <div class="d-flex align-items-center justify-content-center">
+                        <i class="bi bi-credit-card me-2 text-info"></i>
+                        <p class="mb-0 fs-5 fw-bold">{{ card.cardID }}</p>
+                    </div>
+                </div>
+
+                <!-- 余额信息 -->
+                <div class="text-center mb-5">
+                    <div class="card border-0 bg-success bg-opacity-10 rounded-4 p-4 mb-3">
+                        <h6 class="text-success mb-2">
+                            <i class="bi bi-cash-stack me-2"></i>当前余额
+                        </h6>
+                        <p class="display-4 fw-bold text-success mb-0">¥{{ balance }}</p>
+                        <div class="mt-2 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-tag-fill me-2 text-success"></i>
+                            <p class="text-success mb-0">{{ card.savingID.savingName }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账户详情 -->
+                <div class="row text-center bg-light rounded-3 py-3 mb-4">
+                    <div class="col">
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="bi bi-calendar-date mb-2 text-info"></i>
+                            <p class="text-muted small mb-1">开户日期</p>
+                            <p class="mb-0 fw-bold">{{ card.openDate|date:'Y-m-d' }}</p>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="bi bi-shield-check mb-2 text-info"></i>
+                            <p class="text-muted small mb-1">账户状态</p>
+                            <p class="mb-0">
+                                {% if card.IsReportLoss == '是' %}
+                                    <span class="badge bg-danger rounded-pill">
+                                        <i class="bi bi-x-circle me-1"></i>已挂失
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success rounded-pill">
+                                        <i class="bi bi-check-circle me-1"></i>正常
+                                    </span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="d-grid gap-2 mt-5">
+                    <a href="{% url 'transaction_history' %}?card_id={{ card.cardID }}" class="btn btn-info">
+                        <i class="bi bi-clock-history me-2"></i>查看交易记录
+                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'balance_inquiry' %}" class="btn btn-outline-info flex-grow-1">
+                            <i class="bi bi-arrow-repeat me-1"></i>重新查询
+                        </a>
+                        <a href="{% url 'index' %}" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-house me-1"></i>返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}交易处理 - 银行业务管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-currency-exchange text-success me-2"></i>交易处理</h2>
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-house-door me-1"></i>返回首页
+            </a>
+        </div>
+        
+        <div class="card shadow border-0 rounded-3 mb-4">
+            <div class="card-header bg-success bg-gradient text-white py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-cash-coin me-2"></i>交易处理</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <h6 class="text-muted fw-bold mb-3"><i class="bi bi-arrow-left-right me-2"></i>选择交易类型</h6>
+                        <div class="btn-group w-100" role="group" aria-label="交易类型">
+                            <input type="radio" class="btn-check" name="trade_type" id="deposit" value="存入" checked>
+                            <label class="btn btn-outline-success py-3" for="deposit">
+                                <i class="bi bi-arrow-down-circle me-2"></i>存款
+                            </label>
+
+                            <input type="radio" class="btn-check" name="trade_type" id="withdraw" value="支取">
+                            <label class="btn btn-outline-success py-3" for="withdraw">
+                                <i class="bi bi-arrow-up-circle me-2"></i>取款
+                            </label>
+
+                            <input type="radio" class="btn-check" name="trade_type" id="transfer" value="转账">
+                            <label class="btn btn-outline-success py-3" for="transfer">
+                                <i class="bi bi-arrow-left-right me-2"></i>转账
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="card_id" class="form-label fw-bold"><i class="bi bi-credit-card me-2 text-success"></i>银行卡号</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-credit-card-2-front"></i></span>
+                            <input type="text" class="form-control form-control-lg" id="card_id" name="card_id" placeholder="请输入19位银行卡号" required pattern="[0-9]{19}" title="请输入19位数字的银行卡号">
+                        </div>
+                        <div class="form-text">请输入正确的19位银行卡号</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label fw-bold"><i class="bi bi-shield-lock me-2 text-success"></i>交易密码</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-key"></i></span>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="请输入6位数字密码" minlength="6" maxlength="6" required pattern="[0-9]{6}" title="请输入6位数字密码">
+                        </div>
+                        <div class="form-text">密码为6位数字，请妥善保管</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="amount" class="form-label fw-bold"><i class="bi bi-cash me-2 text-success"></i>交易金额 (元)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-currency-yen"></i></span>
+                            <input type="number" class="form-control form-control-lg" id="amount" name="amount" min="0.01" step="0.01" required placeholder="请输入交易金额">
+                        </div>
+                        <div class="form-text">最小交易金额为0.01元</div>
+                    </div>
+
+                    <div id="depositTypeGroup" class="mb-4">
+                        <label for="deposit_type" class="form-label fw-bold"><i class="bi bi-tag me-2 text-success"></i>存款类型</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-list"></i></span>
+                            <select class="form-select form-select-lg" id="deposit_type" name="deposit_type">
+                                <option value="" selected disabled>请选择存款类型</option>
+                                {% for deposit in deposits %}
+                                <option value="{{ deposit.savingID }}" data-description="{{ deposit.descrip }}">{{ deposit.savingName }}</option>
+                                {% empty %}
+                                <option value="" disabled>暂无存款类型数据，请先运行项目根目录下的 init_deposit_data.bat 初始化脚本</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-text mt-2" id="depositDescription">
+                            {% if deposits %}
+                            请选择适合客户需求的存款类型
+                            {% else %}
+                            <span class="text-danger">系统中暂无存款类型数据，请先运行项目根目录下的 init_deposit_data.bat 初始化脚本</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div id="targetCardGroup" class="mb-4 d-none">
+                        <label for="target_card_id" class="form-label fw-bold"><i class="bi bi-person-badge me-2 text-success"></i>目标银行卡号</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-send"></i></span>
+                            <input type="text" class="form-control form-control-lg" id="target_card_id" name="target_card_id" placeholder="请输入对方19位银行卡号" pattern="[0-9]{19}" title="请输入19位数字的银行卡号">
+                        </div>
+                        <div class="form-text">请仔细核对收款人的银行卡号</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="remark" class="form-label fw-bold"><i class="bi bi-chat-left-text me-2 text-success"></i>交易备注 (选填)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-pencil"></i></span>
+                            <textarea class="form-control" id="remark" name="remark" rows="2" placeholder="请输入交易备注信息，方便您日后查询"></textarea>
+                        </div>
+                        <div class="form-text">备注信息将显示在交易记录中</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-5">
+                        <a href="{% url 'index' %}" class="btn btn-outline-secondary btn-lg me-md-2">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle me-2"></i>确认交易
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-4 shadow-sm rounded-3 border-start border-info border-4" role="alert">
+            <div class="d-flex align-items-center mb-3">
+                <i class="bi bi-info-circle-fill text-info fs-3 me-3"></i>
+                <h5 class="alert-heading mb-0 fw-bold">交易须知</h5>
+            </div>
+            <ul class="mb-0 ps-4">
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>安全验证：</strong>请确保银行卡号和密码输入正确，保护您的账户安全</li>
+                <li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i><strong>余额限制：</strong>取款金额不能超过账户余额，请合理安排资金</li>
+                <li class="mb-2"><i class="bi bi-shield-fill-check text-primary me-2"></i><strong>转账确认：</strong>转账前请仔细核对对方银行卡号，避免转错账户</li>
+                <li class="mb-2"><i class="bi bi-clock-history text-secondary me-2"></i><strong>交易记录：</strong>交易完成后可在<a href="{% url 'transaction_history' %}" class="alert-link">交易记录</a>中查询详情</li>
+                <li><i class="bi bi-telephone-fill text-danger me-2"></i><strong>客服热线：</strong>如有疑问，请拨打客服电话 <strong>400-888-8888</strong></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 监听交易类型切换，显示/隐藏相关字段
+    document.addEventListener('DOMContentLoaded', function() {
+        const tradeTypeRadios = document.querySelectorAll('input[name="trade_type"]');
+        const targetCardGroup = document.getElementById('targetCardGroup');
+        const targetCardInput = document.getElementById('target_card_id');
+        const depositTypeGroup = document.getElementById('depositTypeGroup');
+        const depositTypeSelect = document.getElementById('deposit_type');
+
+        function toggleFields() {
+            const selectedType = document.querySelector('input[name="trade_type"]:checked').value;
+            
+            // 处理转账字段
+            if (selectedType === '转账') {
+                targetCardGroup.classList.remove('d-none');
+                targetCardInput.required = true;
+            } else {
+                targetCardGroup.classList.add('d-none');
+                targetCardInput.required = false;
+            }
+            
+            // 处理存款类型字段
+            if (selectedType === '存入') {
+                depositTypeGroup.classList.remove('d-none');
+                depositTypeSelect.required = true;
+            } else {
+                depositTypeGroup.classList.add('d-none');
+                depositTypeSelect.required = false;
+            }
+        }
+
+        // 存款类型选择变化时更新描述
+        if (depositTypeSelect) {
+            depositTypeSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const description = selectedOption.dataset.description || '请选择适合客户需求的存款类型';
+                document.getElementById('depositDescription').textContent = description;
+            });
+        }
+
+        // 初始状态检查
+        toggleFields();
+
+        // 为每个单选按钮添加事件监听
+        tradeTypeRadios.forEach(radio => {
+            radio.addEventListener('change', toggleFields);
+        });
+    });
+</script>
+{% endblock %}

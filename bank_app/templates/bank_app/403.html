@@ -1,0 +1,31 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}权限错误 - 银行业务管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h1 class="display-1 text-danger">403</h1>
+                <h2 class="card-title mb-4">权限错误</h2>
+                <p class="card-text mb-4">{{ exception }}</p>
+                <a href="{% url 'index' %}" class="btn btn-primary">返回首页</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    border-radius: 1rem;
+    border: none;
+}
+.display-1 {
+    font-size: 5rem;
+    font-weight: 300;
+}
+</style>
+{% endblock %}

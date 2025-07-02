@@ -1,0 +1,235 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}首页 - 银行业务管理系统{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+    .card-hover:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .gradient-custom {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    }
+    .card-balance {
+        border-radius: 15px;
+        border: none;
+        overflow: hidden;
+    }
+    .card-balance .card-body {
+        padding: 1.5rem;
+    }
+    .balance-icon {
+        font-size: 2.5rem;
+        opacity: 0.8;
+    }
+    .welcome-section {
+        background: url('https://source.unsplash.com/random/1200x400/?bank') center/cover no-repeat;
+        padding: 4rem 0;
+        position: relative;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    .welcome-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+    }
+    .welcome-content {
+        position: relative;
+        z-index: 1;
+        color: white;
+        padding: 0 2rem;
+    }
+    .quick-actions {
+        margin-top: 2rem;
+    }
+    .quick-action-card {
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+    .quick-action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .quick-action-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 欢迎区域 -->
+<div class="welcome-section mb-4">
+    <div class="welcome-content text-center">
+        <h1 class="display-5 fw-bold mb-3">欢迎回来，{{ user.first_name }}</h1>
+        <p class="lead">感谢您使用银行业务管理系统，我们致力于为您提供安全、便捷的金融服务体验。</p>
+    </div>
+</div>
+
+<!-- 银行卡余额展示 -->
+{% if cards %}
+<div class="mb-4">
+    <h4 class="mb-3"><i class="bi bi-credit-card me-2"></i>我的银行卡</h4>
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        {% for card in cards %}
+        <div class="col">
+            <div class="card card-balance shadow-sm card-hover">
+                <div class="card-header gradient-custom text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ card.savingID.savingName }}</h5>
+                        <i class="bi bi-credit-card-2-front balance-icon"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <p class="text-muted mb-1">卡号</p>
+                            <h6>{{ card.cardID }}</h6>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-1">开户日期</p>
+                            <h6>{{ card.openDate|date:'Y-m-d' }}</h6>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">当前余额</p>
+                            <h3 class="text-success fw-bold">¥{{ card.balance }}</h3>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-1">状态</p>
+                            {% if card.IsReportLoss == '是' %}
+                                <span class="badge bg-danger">已挂失</span>
+                            {% else %}
+                                <span class="badge bg-success">正常</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'transaction_create' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-cash-coin me-1"></i>交易</a>
+                        <a href="{% url 'transaction_history' %}?card_id={{ card.cardID }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clock-history me-1"></i>交易记录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info" role="alert">
+    <h5><i class="bi bi-info-circle me-2"></i>未找到银行卡</h5>
+    <p>您目前没有关联的银行卡信息。如需开通银行卡，请联系银行工作人员。</p>
+</div>
+{% endif %}
+
+<!-- 快捷操作 -->
+<div class="quick-actions">
+    <h4 class="mb-3"><i class="bi bi-lightning-charge me-2"></i>快捷操作</h4>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        <div class="col">
+            <div class="card quick-action-card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-cash-stack quick-action-icon text-success"></i>
+                    <h5 class="card-title">交易处理</h5>
+                    <p class="card-text">处理存款、取款和转账等日常银行业务交易。</p>
+                    <a href="{% url 'transaction_create' %}" class="btn btn-outline-success">发起交易</a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card quick-action-card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-wallet2 quick-action-icon text-info"></i>
+                    <h5 class="card-title">余额查询</h5>
+                    <p class="card-text">查询账户余额，掌握账户资金情况。</p>
+                    <a href="{% url 'balance_inquiry' %}" class="btn btn-outline-info">查询余额</a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card quick-action-card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-clock-history quick-action-icon text-primary"></i>
+                    <h5 class="card-title">交易记录</h5>
+                    <p class="card-text">查询历史交易记录，了解账户资金流动。</p>
+                    <a href="{% url 'transaction_history' %}" class="btn btn-outline-primary">查看记录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-light shadow-sm mt-4" role="alert">
+    <div class="d-flex">
+        <div class="me-3">
+            <i class="bi bi-info-circle-fill text-primary fs-3"></i>
+        </div>
+        <div>
+            <h5 class="alert-heading">系统提示</h5>
+            <p class="mb-0">本系统为数据库课程设计项目，使用Django 4.2框架开发，前端采用Bootstrap 5，后端连接OpenGauss数据库。</p>
+        </div>
+    </div>
+</div>
+
+<!-- 数据库视图入口 -->
+<div class="mt-4">
+    <h4 class="mb-3"><i class="bi bi-database me-2"></i>数据库视图</h4>
+    <div class="row row-cols-1 row-cols-md-4 g-4">
+        <div class="col">
+            <div class="card quick-action-card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-people quick-action-icon text-primary"></i>
+                    <h5 class="card-title">客户账户视图</h5>
+                    <p class="card-text">查看客户账户综合信息</p>
+                    <a href="{% url 'customer_accounts' %}" class="btn btn-outline-primary">查看</a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card quick-action-card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-receipt quick-action-icon text-success"></i>
+                    <h5 class="card-title">交易明细视图</h5>
+                    <p class="card-text">查看详细交易记录信息</p>
+                    <a href="{% url 'transaction_details' %}" class="btn btn-outline-success">查看</a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card quick-action-card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-bar-chart quick-action-icon text-info"></i>
+                    <h5 class="card-title">余额统计视图</h5>
+                    <p class="card-text">查看客户余额统计信息</p>
+                    <a href="{% url 'balance_summary' %}" class="btn btn-outline-info">查看</a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card quick-action-card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-pie-chart quick-action-icon text-warning"></i>
+                    <h5 class="card-title">交易类型统计</h5>
+                    <p class="card-text">查看交易类型统计信息</p>
+                    <a href="{% url 'transaction_summary' %}" class="btn btn-outline-warning">查看</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr>
+<p class="mb-0">管理员可通过<a href="{% url 'system_dashboard' %}" class="alert-link">系统管理</a>查看整体运营数据，或查看<a href="{% url 'db_views_dashboard' %}" class="alert-link"><i class="bi bi-database me-1"></i>数据库视图仪表盘</a>。</p>
+</div>
+{% endblock %}

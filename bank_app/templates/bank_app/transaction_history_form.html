@@ -1,0 +1,86 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}交易记录查询 - 银行业务管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-clock-history text-primary me-2"></i>交易记录查询</h2>
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-house-door me-1"></i>返回首页
+            </a>
+        </div>
+        
+        <div class="card shadow border-0 rounded-3 mb-4">
+            <div class="card-header bg-primary bg-gradient text-white py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-search me-2"></i>查询交易记录</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4 text-center">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 p-3 mb-3">
+                            <i class="bi bi-clock-history fs-1 text-primary"></i>
+                        </div>
+                        <p class="text-muted fs-5">查询最近交易记录，请输入银行卡信息</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="card_id" class="form-label fw-bold"><i class="bi bi-credit-card me-2 text-primary"></i>银行卡号</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-credit-card-2-front"></i></span>
+                            <input type="text" class="form-control form-control-lg" id="card_id" name="card_id" placeholder="请输入19位银行卡号" required pattern="[0-9]{19}" title="请输入19位数字的银行卡号">
+                        </div>
+                        <div class="form-text">请输入正确的19位银行卡号</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label fw-bold"><i class="bi bi-shield-lock me-2 text-primary"></i>查询密码</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-key"></i></span>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="请输入6位数字密码" minlength="6" maxlength="6" required pattern="[0-9]{6}" title="请输入6位数字密码">
+                        </div>
+                        <div class="form-text">密码为6位数字，请妥善保管</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="record_count" class="form-label fw-bold"><i class="bi bi-list-ol me-2 text-primary"></i>查询记录条数</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-filter"></i></span>
+                            <select class="form-select form-select-lg" id="record_count" name="record_count">
+                                <option value="10">最近10条</option>
+                                <option value="20">最近20条</option>
+                                <option value="50">最近50条</option>
+                            </select>
+                        </div>
+                        <div class="form-text">选择需要查询的交易记录数量</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-5">
+                        <a href="{% url 'index' %}" class="btn btn-outline-secondary btn-lg me-md-2">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-search me-2"></i>查询记录
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-light mt-4 shadow-sm rounded-3 border-start border-primary border-4" role="alert">
+            <div class="d-flex align-items-center mb-3">
+                <i class="bi bi-info-circle-fill text-primary fs-3 me-3"></i>
+                <h5 class="alert-heading mb-0 fw-bold">查询说明</h5>
+            </div>
+            <ul class="mb-0 ps-4">
+                <li class="mb-2"><i class="bi bi-1-circle-fill text-primary me-2"></i><strong>默认记录：</strong>系统默认显示最近10条交易记录，可根据需要调整</li>
+                <li class="mb-2"><i class="bi bi-2-circle-fill text-primary me-2"></i><strong>交易类型：</strong>交易记录包含<span class="badge bg-success rounded-pill">存款</span>、<span class="badge bg-danger rounded-pill">取款</span>和<span class="badge bg-primary rounded-pill">转账</span>等操作</li>
+                <li class="mb-2"><i class="bi bi-3-circle-fill text-primary me-2"></i><strong>打印凭证：</strong>查询结果页面可直接打印交易记录，也可联系柜台工作人员</li>
+                <li><i class="bi bi-4-circle-fill text-primary me-2"></i><strong>安全提示：</strong>请妥善保管您的银行卡和密码，定期查询交易记录</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

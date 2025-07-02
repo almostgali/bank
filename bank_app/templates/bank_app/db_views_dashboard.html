@@ -1,0 +1,89 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}数据库视图仪表盘{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="bi bi-database me-2"></i>数据库视图仪表盘</h2>
+    
+    <div class="row">
+        <!-- 客户账户统计卡片 -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">客户账户统计</h5>
+                        <i class="bi bi-people fs-4"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">总客户数: <strong>{{ customer_count }}</strong></p>
+                    <p class="card-text">总银行卡数: <strong>{{ card_count }}</strong></p>
+                    <p class="card-text">已挂失银行卡数: <strong>{{ lost_card_count }}</strong></p>
+                    <a href="{% url 'customer_accounts' %}" class="btn btn-primary">查看详情</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 交易统计卡片 -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">交易统计</h5>
+                        <i class="bi bi-receipt fs-4"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">总交易次数: <strong>{{ transaction_count }}</strong></p>
+                    <p class="card-text">总交易金额: <strong>{{ total_transaction_amount }}</strong></p>
+                    <p class="card-text">平均交易金额: <strong>{{ avg_transaction_amount|floatformat:2 }}</strong></p>
+                    <a href="{% url 'transaction_details' %}" class="btn btn-success">查看详情</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- 余额统计卡片 -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">余额统计</h5>
+                        <i class="bi bi-bar-chart fs-4"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">总余额: <strong>{{ total_balance }}</strong></p>
+                    <p class="card-text">最高账户余额: <strong>{{ max_balance }}</strong></p>
+                    <p class="card-text">平均账户余额: <strong>{{ avg_balance|floatformat:2 }}</strong></p>
+                    <a href="{% url 'balance_summary' %}" class="btn btn-info">查看详情</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 交易类型统计卡片 -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">交易类型统计</h5>
+                        <i class="bi bi-pie-chart fs-4"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">存款交易次数: <strong>{{ deposit_count }}</strong></p>
+                    <p class="card-text">取款交易次数: <strong>{{ withdraw_count }}</strong></p>
+                    <p class="card-text">转账交易次数: <strong>{{ transfer_count }}</strong></p>
+                    <a href="{% url 'transaction_summary' %}" class="btn btn-warning">查看详情</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{% url 'index' %}" class="btn btn-secondary">返回首页</a>
+    </div>
+</div>
+{% endblock %}

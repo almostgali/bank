@@ -1,0 +1,81 @@
+{% extends 'bank_app/base.html' %}
+
+{% block title %}余额查询 - 银行业务管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-search-heart me-2"></i>余额查询
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4 text-center">
+                        <div class="d-inline-block p-3 bg-info bg-opacity-10 rounded-circle mb-3">
+                            <i class="bi bi-wallet2 fs-1 text-info"></i>
+                        </div>
+                        <h5>账户余额查询</h5>
+                        <p class="text-muted">请输入银行卡信息查询账户余额</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="card_id" class="form-label">
+                            <i class="bi bi-credit-card me-1 text-info"></i>银行卡号
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="card_id" name="card_id" placeholder="请输入19位银行卡号" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="bi bi-shield-lock me-1 text-info"></i>查询密码
+                        </label>
+                        <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="请输入6位数字密码" minlength="6" maxlength="6" required>
+                        <div class="form-text">密码为开户时设置的6位数字密码</div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-info btn-lg">
+                            <i class="bi bi-search me-2"></i>查询余额
+                        </button>
+                        <a href="{% url 'index' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>返回首页
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <div class="card shadow-sm border-0 bg-light rounded-3">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3">
+                        <i class="bi bi-info-circle-fill me-2 text-info"></i>查询须知
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2 d-flex align-items-center">
+                            <div class="me-2 text-info"><i class="bi bi-shield-check"></i></div>
+                            <div>请确保银行卡号和密码输入正确，保护您的账户安全</div>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <div class="me-2 text-info"><i class="bi bi-cash"></i></div>
+                            <div>系统仅显示当前可用余额，定期存款到期前查询将显示本金</div>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <div class="me-2 text-info"><i class="bi bi-clock-history"></i></div>
+                            <div>查询结果页面可查看交易记录，了解账户资金变动情况</div>
+                        </li>
+                        <li class="d-flex align-items-center">
+                            <div class="me-2 text-info"><i class="bi bi-headset"></i></div>
+                            <div>如遇问题，请联系柜台工作人员或拨打客服热线</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
